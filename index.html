@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ストップゲーム全部乗せ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #time {
+      font-size: 48px;
+      margin: 20px;
+    }
+    button {
+      font-size: 24px;
+      padding: 10px 30px;
+      margin: 10px;
+    }
+    #history {
+      margin-top: 30px;
+      text-align: left;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <h1>ストップゲーム</h1>
+
+  <div id="modeSelect">
+    <p>目標時間を選んでね！</p>
+    <button onclick="selectTarget(5)">5秒</button>
+    <button onclick="selectTarget(10)">10秒</button>
+  </div>
+
+  <div id="displaySelect" style="display:none;">
+    <p>タイマーの表示方法を選んでね！</p>
+    <button onclick="selectDisplayMode(true)">秒数を表示</button>
+    <button onclick="selectDisplayMode(false)">秒数を隠す</button>
+  </div>
+
+  <div id="gameArea" style="display:none;">
+    <h2 id="targetLabel"></h2>
+    <div id="countdown" style="font-size: 36px; color: red;"></div>
+    <div id="time">0.00</div>
+    <button id="start">スタート</button>
+    <button id="stop" disabled>ストップ</button>
+    <div id="result"></div>
+    <div id="best">ベスト記録: なし</div>
+    <div id="history">
+      <h3>記録履歴（最新10件）</h3>
+      <ul id="historyList"></ul>
+    </div>
+  </div>
+
+  <audio id="beep" src="https://freesound.org/data/previews/341/341695_5260877-lq.mp3"></audio>
+
+  <script>
+    let startTime, timerInterval, targetTime = 10;
+    let bestDiff = null;
+    let history = [];
+    let showTime = true;
+
+    const timeDisplay = document.getElementById('time');
+    const resultDisplay = document.getElementById('result');
+    const bestDisplay = document.getElementById('best');
+    const historyList = document.getElementById('historyList');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const gameArea = document.getElementById('gameArea');
+    const modeSelect = document.getElementById('modeSelect');
+    const displaySelect = document.getElementById('displaySelect');
+    const targetLabel = document.getElementById('targetLabel');
+    const countdown = document.getElementById('countdown');
+    const beep = document.getElementById('beep');
+
+    function selectTarget(seconds) {
+      targetTime = seconds;
+      modeSelect.style.display = 'none';
+      displaySelect.style.display = 'block';
+    }
+
+    function selectDisplayMode(show) {
+      showTime = show;
+      displaySelect.style.display = 'none';
+      gameArea.style.display = 'block';
+      targetLabel.textContent = `目標：${targetTime}秒ピッタリで止めよう！`;
+
+      const bestKey = `bestDiff_${targetTime}_${showTime}`;
+      const historyKey = `history_${targetTime}_${showTime}`;
+      bestDiff = localStorage.getItem(bestKey);
+      history = JSON.parse(localStorage.getItem(historyKey)) || [];
+
+      bestDisplay.textContent = bestDiff
+        ? `ベスト記録: 誤差 ${parseFloat(bestDiff).toFixed(2)} 秒`
+        : `ベスト記録: なし`;
+
+      updateHistoryDisplay();
+    }
+
+    function updateHistoryDisplay() {
+      historyList.innerHTML = '';
+      history.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${index + 1}. ${entry.time.toFixed(2)} 秒（誤差 ${entry.diff.toFixed(2)} 秒）`;
+        historyList.appendChild(li);
+      });
+    }
+
+    function startCountdown(callback) {
+      let count = 3;
+      countdown.textContent = count;
+      beep.play();
+      const countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countdown.textContent = count;
+          beep.play();
+        } else {
+          clearInterval(countdownInterval);
+          countdown.textContent = 'スタート！';
+          beep.play();
+          setTimeout(() => {
+            countdown.textContent = '';
+            callback();
+          }, 500);
+        }
+      }, 1000);
+    }
+
+    function startTimer() {
+      if (!showTime) {
+        timeDisplay.style.visibility = 'hidden';
+      } else {
+        timeDisplay.style.visibility = 'visible';
+      }
+
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        timeDisplay.textContent = elapsed.toFixed(2);
+      }, 10);
+      stopBtn.disabled = false;
+    }
+
+    startBtn.addEventListener('click', () => {
+      startBtn.disabled = true;
+      stopBtn.disabled = true;
+      resultDisplay.textContent = '';
+      timeDisplay.textContent = '0.00';
+      startCountdown(startTimer);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      const finalTime = (Date.now() - startTime) / 1000;
+      const diff = Math.abs(finalTime - targetTime);
+      timeDisplay.textContent = finalTime.toFixed(2);
+      timeDisplay.style.visibility = 'visible';
+      resultDisplay.textContent = `結果: ${finalTime.toFixed(2)} 秒（誤差 ${diff.toFixed(2)} 秒）`;
+
+      const bestKey = `bestDiff_${targetTime}_${showTime}`;
+      const historyKey = `history_${targetTime}_${showTime}`;
+
+      if (bestDiff === null || diff < parseFloat(bestDiff)) {
+        bestDiff = diff;
+        localStorage.setItem(bestKey, bestDiff);
+        bestDisplay.textContent = `ベスト記録: 誤差 ${diff.toFixed(2)} 秒 🎉`;
+      }
+
+      history.unshift({ time: finalTime, diff: diff });
+      if (history.length > 10) history.pop();
+      localStorage.setItem(historyKey, JSON.stringify(history));
+      updateHistoryDisplay();
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    });
+  </script>
+</body>
