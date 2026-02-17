@@ -2,26 +2,65 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ストップゲーム</title>
+  <title>ストップウォッチゲーム</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
       margin-top: 50px;
+      background-color: #e0e0e0;
+      color: #333;
     }
-    #time {
-      font-size: 48px;
-      margin: 20px;
-    }
+
     button {
       font-size: 24px;
       padding: 10px 30px;
       margin: 10px;
+      background-color: #cccccc;
+      border: none;
+      border-radius: 8px;
+      color: #222;
+      cursor: pointer;
+      transition: background-color 0.2s;
     }
+
+    button:hover {
+      background-color: #bbbbbb;
+    }
+
+    #time {
+      font-size: 48px;
+      margin: 20px;
+      color: #111;
+    }
+
+    #countdown {
+      font-size: 36px;
+      color: #d33;
+    }
+
     #history {
       margin-top: 30px;
       text-align: left;
       display: inline-block;
+      background-color: #ffffff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+
+    #toTop {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 18px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #aaa;
+      color: #fff;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -42,7 +81,7 @@
 
   <div id="gameArea" style="display:none;">
     <h2 id="targetLabel"></h2>
-    <div id="countdown" style="font-size: 36px; color: red;"></div>
+    <div id="countdown"></div>
     <div id="time">0.00</div>
     <button id="start">スタート</button>
     <button id="stop" disabled>ストップ</button>
@@ -53,6 +92,8 @@
       <ul id="historyList"></ul>
     </div>
   </div>
+
+  <button id="toTop" onclick="scrollToTop()">↑ トップへ</button>
 
   <audio id="beep" src="https://freesound.org/data/previews/341/341695_5260877-lq.mp3"></audio>
 
@@ -74,6 +115,7 @@
     const targetLabel = document.getElementById('targetLabel');
     const countdown = document.getElementById('countdown');
     const beep = document.getElementById('beep');
+    const toTop = document.getElementById('toTop');
 
     function selectTarget(seconds) {
       targetTime = seconds;
@@ -177,6 +219,19 @@
       startBtn.disabled = false;
       stopBtn.disabled = true;
     });
-    <button id="toTop" onclick="scrollToTop()" style="display:none; position:fixed; bottom:20px; right:20px; font-size:18px; padding:10px 20px; border:none; border-radius:8px; background-color:#aaa; color:#fff; cursor:pointer;">↑ トップへ</button>
+
+    // トップに戻るボタンの表示制御
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 200) {
+        toTop.style.display = 'block';
+      } else {
+        toTop.style.display = 'none';
+      }
+    });
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   </script>
 </body>
+</html>
